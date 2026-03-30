@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import bgImage from '../assets/background.jpeg';
 
-
 const Login = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [formData, setFormData] = useState({ username: '', email: '', password: '', role: 'user' });
@@ -17,22 +16,43 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+
         try {
             let userData;
+
             if (isLogin) {
                 userData = await login(formData.email, formData.password);
                 toast.success('Welcome back to NammaDiscover!');
             } else {
-                userData = await register(formData.username, formData.email, formData.password, formData.role);
+                userData = await register(
+                    formData.username,
+                    formData.email,
+                    formData.password,
+                    formData.role
+                );
                 toast.success('Account created successfully!');
             }
 
+            // ✅ Ensure userData is valid object
+            if (!userData || typeof userData !== "object") {
+                throw new Error("Invalid server response");
+            }
+
             const role = userData?.role;
+
             if (role === 'admin') navigate('/admin');
             else navigate('/dashboard');
 
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Authentication failed');
+            console.log("LOGIN ERROR:", err?.response?.data);
+
+            // ✅ FIX: always extract string
+            const errorMessage =
+                err?.response?.data?.message ||
+                err?.message ||
+                "Authentication failed";
+
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }
@@ -174,7 +194,6 @@ const Login = () => {
                     <div className="glass" style={{ padding: '2.2rem' }}>
 
                         <form onSubmit={handleSubmit}>
-
                             {!isLogin && (
                                 <input
                                     type="text"
@@ -222,7 +241,8 @@ const Login = () => {
                             {isLogin && <div className="info">🛡 Admin auto-detected</div>}
 
                             <button type="submit" className="btn" style={{ marginTop: '1rem' }}>
-                                {loading ? <span className="spinner"></span>
+                                {loading
+                                    ? <span className="spinner"></span>
                                     : (isLogin ? 'Sign In →' : 'Create Account →')}
                             </button>
                         </form>
